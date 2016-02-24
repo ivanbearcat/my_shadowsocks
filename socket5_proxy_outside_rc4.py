@@ -7,8 +7,9 @@ class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): p
 class Socks5Server(SocketServer.StreamRequestHandler):
 
     key = 'rp1qaz@WSX'
-#    crypto = Encryptor('rp1qaz@WSX','rc4-md5')
-    crypto = crypt_aes(key+'000000')
+    crypto_table = Encryptor(key,'table')
+    crypto_rc4_md5 = Encryptor(key,'rc4-md5')
+#    crypto = crypt_aes(key+'000000')
 
     def handle_tcp(self, sock, remote):
         fdset = [sock, remote]
@@ -18,26 +19,27 @@ class Socks5Server(SocketServer.StreamRequestHandler):
                 length = sock.recv(4)
                 if not length:
                     break
-                data = rc4(sock.recv(int(decrypt('rp1qaz@WSX',length))),op='decode',public_key='rp1qaz@WSX')
-#                if len(data) <= 0:
-#                    break
-                print str(len(data)) + '<<<'
-                remote.send(data)
-            if remote in r:
-                data = remote.recv(2048)
+                data = sock.recv(int(self.crypto_table.decrypt(length)))
+#                data = sock.recv(4096)
                 if len(data) <= 0:
                     break
-                data = rc4(data,op='encode',public_key='rp1qaz@WSX')
+                print str(len(data)) + '<<<'
+                remote.send(self.crypto_rc4_md5.decrypt(data))
+            if remote in r:
+                data = remote.recv(4096)
+                if len(data) <= 0:
+                    break
+                data = self.crypto_rc4_md5.encrypt(data)
                 length = str(len(data))
                 if len(length) < 4:
                     length = (4 - len(length)) * '0' + length
-                print str(len(data)) + '>>>'
-                sock.send(encrypt('rp1qaz@WSX',length) + data)
+#                print str(len(data)) + '>>>'
+                sock.send(self.crypto_table.encrypt(length) + data)
 
 #                data = remote.recv(4096)
 #                if len(data) <= 0:
 #                    break
-#                sock.send(data)
+#                sock.send(self.crypto.encrypt(data))
 
     def handle(self):
         try:
