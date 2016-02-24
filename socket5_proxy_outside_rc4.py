@@ -8,7 +8,6 @@ class Socks5Server(SocketServer.StreamRequestHandler):
 
     key = 'rp1qaz@WSX'
     crypto_table = Encryptor(key,'table')
-    crypto_rc4_md5 = Encryptor(key,'rc4-md5')
 #    crypto = crypt_aes(key+'000000')
 
     def handle_tcp(self, sock, remote):
@@ -24,12 +23,16 @@ class Socks5Server(SocketServer.StreamRequestHandler):
                 if len(data) <= 0:
                     break
                 print str(len(data)) + '<<<'
-                remote.send(self.crypto_rc4_md5.decrypt(data))
+               # print self.crypto_rc4_md5.decrypt(data)
+                crypto_rc4_md5 = Encryptor(self.key,'rc4-md5')
+                remote.send(crypto_rc4_md5.decrypt(data))
             if remote in r:
                 data = remote.recv(4096)
                 if len(data) <= 0:
                     break
-                data = self.crypto_rc4_md5.encrypt(data)
+               # print data
+                crypto_rc4_md5 = Encryptor(self.key,'rc4-md5')
+                data = crypto_rc4_md5.encrypt(data)
                 length = str(len(data))
                 if len(length) < 4:
                     length = (4 - len(length)) * '0' + length
